@@ -1,6 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List
+import random
 
 app = FastAPI()
 
@@ -28,3 +29,19 @@ def home():
 @app.get("/showallpokemons/", response_model=List[Pokemon])
 def show_all_pokemons():
     return pokemons
+
+
+@app.get("/showonepokemon/", response_model=Pokemon)
+def show_one_pokemon(name: str):
+    for pokemon in pokemons:
+        if pokemon.name.lower() == name.lower():
+            return pokemon
+    raise HTTPException(status_code=404, detail="Pokemon not found")
+
+
+@app.get("/showonepokemonbyid/", response_model=Pokemon)
+def show_one_pokemon_by_id(id: int):
+    for pokemon in pokemons:
+        if pokemon.id == id:
+            return pokemon
+    raise HTTPException(status_code=404, detail="Pokemon not found")
