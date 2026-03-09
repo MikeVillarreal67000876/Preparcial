@@ -1,9 +1,10 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel
 from typing import List
+import csv
 import random
 
-app = FastAPI()
+app = FastAPI(title="Pokemon API - Pre Parcial")
 
 
 class Pokemon(BaseModel):
@@ -13,17 +14,36 @@ class Pokemon(BaseModel):
     live: int
     type: str
 
+    def attack_action(self):
+        return f"{self.name} attacks with power {self.attack}"
 
-pokemons = [
-    Pokemon(id=1, name="Bulbasaur", attack=49, live=45, type="Grass"),
-    Pokemon(id=4, name="Charmander", attack=52, live=39, type="Fire"),
-    Pokemon(id=7, name="Squirtle", attack=48, live=44, type="Water"),
-]
+    def leave_pokeball(self):
+        return f"{self.name} leaves the Pokeball!"
+
+
+def load_pokemons_from_csv(filename: str) -> List[Pokemon]:
+    pokemons = []
+    with open(filename, mode="r", encoding="utf-8") as file:
+        reader = csv.DictReader(file)
+        for row in reader:
+            pokemons.append(
+                Pokemon(
+                    id=int(row["id"]),
+                    name=row["name"],
+                    attack=int(row["attack"]),
+                    live=int(row["live"]),
+                    type=row["type"]
+                )
+            )
+    return pokemons
+
+
+pokemons = load_pokemons_from_csv("pokemon.csv")
 
 
 @app.get("/")
 def home():
-    return {"message": "Welcome trainer!"}
+    return {"message": "Welcome trainer to the Pokemon API"}
 
 
 @app.get("/showallpokemons/", response_model=List[Pokemon])
@@ -32,7 +52,7 @@ def show_all_pokemons():
 
 
 @app.get("/showonepokemon/", response_model=Pokemon)
-def show_one_pokemon(name: str):
+def show_one_pokemon(name: str = Query(...)):
     for pokemon in pokemons:
         if pokemon.name.lower() == name.lower():
             return pokemon
@@ -40,7 +60,7 @@ def show_one_pokemon(name: str):
 
 
 @app.get("/showonepokemonbyid/", response_model=Pokemon)
-def show_one_pokemon_by_id(id: int):
+def show_one_pokemon_by_id(id: int = Query(...)):
     for pokemon in pokemons:
         if pokemon.id == id:
             return pokemon
@@ -48,7 +68,10 @@ def show_one_pokemon_by_id(id: int):
 
 
 @app.get("/pokemonbattle/")
-def pokemon_battle(pokemon1: str, pokemon2: str):
+def pokemon_battle(
+    pokemon1: str = Query(...),
+    pokemon2: str = Query(...)
+):
     p1 = None
     p2 = None
 
@@ -75,12 +98,17 @@ def pokemon_battle(pokemon1: str, pokemon2: str):
         "message": "What an exciting battle!",
         "pokemon_1": p1,
         "pokemon_2": p2,
+        "pokemon_1_action": p1.attack_action(),
+        "pokemon_2_action": p2.attack_action(),
         "winner": winner
     }
 
 
 @app.get("/pokemonorderedby/", response_model=List[Pokemon])
-def pokemon_ordered_by(field: str, desc: bool = False):
+def pokemon_ordered_by(
+    field: str = Query(...),
+    desc: bool = Query(False)
+):
     valid_fields = ["id", "name", "attack", "live", "type"]
 
     if field not in valid_fields:
