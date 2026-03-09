@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List
+import random
 
 app = FastAPI()
 
@@ -44,3 +45,35 @@ def show_one_pokemon_by_id(id: int):
         if pokemon.id == id:
             return pokemon
     raise HTTPException(status_code=404, detail="Pokemon not found")
+
+
+@app.get("/pokemonbattle/")
+def pokemon_battle(pokemon1: str, pokemon2: str):
+    p1 = None
+    p2 = None
+
+    for pokemon in pokemons:
+        if pokemon.name.lower() == pokemon1.lower():
+            p1 = pokemon
+        if pokemon.name.lower() == pokemon2.lower():
+            p2 = pokemon
+
+    if not p1 or not p2:
+        raise HTTPException(status_code=404, detail="One or both pokemons not found")
+
+    score1 = p1.attack + p1.live + random.randint(1, 20)
+    score2 = p2.attack + p2.live + random.randint(1, 20)
+
+    if score1 > score2:
+        winner = p1.name
+    elif score2 > score1:
+        winner = p2.name
+    else:
+        winner = "Draw"
+
+    return {
+        "message": "What an exciting battle!",
+        "pokemon_1": p1,
+        "pokemon_2": p2,
+        "winner": winner
+    }
