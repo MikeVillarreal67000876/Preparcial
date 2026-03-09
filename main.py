@@ -77,3 +77,22 @@ def pokemon_battle(pokemon1: str, pokemon2: str):
         "pokemon_2": p2,
         "winner": winner
     }
+
+
+@app.get("/pokemonorderedby/", response_model=List[Pokemon])
+def pokemon_ordered_by(field: str, desc: bool = False):
+    valid_fields = ["id", "name", "attack", "live", "type"]
+
+    if field not in valid_fields:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid field. Use one of: {valid_fields}"
+        )
+
+    ordered_list = sorted(
+        pokemons,
+        key=lambda pokemon: getattr(pokemon, field),
+        reverse=desc
+    )
+
+    return ordered_list
